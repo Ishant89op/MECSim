@@ -67,6 +67,14 @@ public class DataProcessor {
         } else if (GlobalConfig.getInstance().getDatasetType() == GlobalConfig.DatasetType.SYNTHETIC_TASKS) {
             loadSyntheticTasks();
         }else if(GlobalConfig.getInstance().getDatasetType() == GlobalConfig.DatasetType.IOT_DATASET){
+            File job_file = new File(GlobalConfig.getInstance().getJobsPath());
+            File task_file = new File(GlobalConfig.getInstance().getTaskSetPath());
+            if (!job_file.exists() || !task_file.exists()) {
+                System.out.println("We could not push the IoT dataset due to space constraints in GitHub.\n" +
+                        "You can download these two files from zenodo website and keep under directory PureEdgeSim/dataset/iot_dataset\n" +
+                        "URL: https://zenodo.org/records/4667690");
+                System.exit(0);
+            }
             this.loadJobs();
             this.loadTasks();
             System.out.println("Loaded IoT dataset");

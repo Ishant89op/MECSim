@@ -371,5 +371,21 @@
 			<artifactId>jackson-databind</artifactId>
 			<version>2.4.2</version>
 		</dependency>
+
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>2.1.2</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/PureEdgeSim/libs/json-simple-2.1.2.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>net.sourceforge.jFuzzyLogic</groupId>
+            <artifactId>jFuzzyLogic</artifactId>
+            <version>3.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/PureEdgeSim/libs/jFuzzyLogic_v3.0.jar</systemPath>
+        </dependency>
 	</dependencies>
 </project>
