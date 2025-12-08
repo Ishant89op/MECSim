@@ -1,11 +1,15 @@
-package common;
+package common.reliability;
 
 import dag.TaskNode;
 
-public class TaskReliability {
+public class TransientFaultBasedReliability extends TaskReliability{
     static double LAMBDA_0 = Math.pow(10, -9);
     static double d = 0.45;
-    public static double getReliability(TaskNode taskNode){
+    public double getReliability(TaskNode taskNode){
+        return transientFaultBasedReliability(taskNode);
+    }
+
+    private double transientFaultBasedReliability(TaskNode taskNode){
         double fmax = taskNode.getEdgeDevice().getMipsPerCore();
         double minMipsNeeded = Math.ceil(taskNode.getLength() / taskNode.getMaxLatency());
         double fmin = 0;
@@ -22,7 +26,6 @@ public class TaskReliability {
         double lambda = calculateLambda(fi, fmin);
         double exp_power = lambda*(executionTime/fi);
         double reliability = Math.exp(-exp_power);
-        //System.out.println("Rel: "+reliability+" fmin: "+fmin+" fmax: "+fmax+" minMipsNeeded: "+minMipsNeeded+" lambda: "+lambda+ " exp_power: "+exp_power+" executionTime: "+executionTime);
         return reliability;
     }
 
@@ -31,4 +34,3 @@ public class TaskReliability {
         return LAMBDA_0*Math.pow(10, pow_coeff);
     }
 }
-

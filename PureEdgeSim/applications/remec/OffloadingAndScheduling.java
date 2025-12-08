@@ -7,7 +7,8 @@ import com.mechalikh.pureedgesim.simulationmanager.SimulationManager;
 import com.mechalikh.pureedgesim.taskgenerator.Task;
 import common.Helper;
 import common.Job;
-import common.TaskReliability;
+import common.reliability.TaskReliability;
+import common.reliability.TransientFaultBasedReliability;
 import dag.TaskNode;
 import net.sourceforge.jFuzzyLogic.FIS;
 
@@ -29,16 +30,18 @@ public class OffloadingAndScheduling {
     private Map<Integer, Integer> lbMap = new HashMap<>();
     boolean isRandom = false;
     boolean randomOffloading = false;
+    TaskReliability reliability = null;
     //Security security = null;
     public OffloadingAndScheduling(SimulationManager simulationManager){
         simManager = simulationManager;
         fis_mec = FIS.load(fileName_mec, true);
         umiGenerator = new UMIGenerator();
+        reliability = new TransientFaultBasedReliability();
     }
 
     public void remec(Task task, boolean is_secondary){
         TaskNode taskNode = (TaskNode) task;
-        double rel = TaskReliability.getReliability(taskNode);
+        double rel = reliability.getReliability(taskNode);
         if(rel < RELIABLE_THRESHOLD){
             taskNode.setLowReliable(true);
         }

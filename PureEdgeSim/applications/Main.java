@@ -10,14 +10,14 @@ import common.GlobalConfig;
 import dag.DependentTaskGenerator;
 
 public class Main {
-//    private static String settingsPath = "PureEdgeSim/applications/remec/settings/";
-//    private static String outputPath = "PureEdgeSim/applications/remec/output/";
+    private static String settingsPath = "PureEdgeSim/applications/remec/settings/";
+    private static String outputPath = "PureEdgeSim/applications/remec/output/";
 //    private static String settingsPath = "PureEdgeSim/applications/bqprofit/settings/";
 //    private static String outputPath = "PureEdgeSim/applications/bqprofit/output/";
 //    private static String settingsPath = "PureEdgeSim/applications/delta/settings/";
 //    private static String outputPath = "PureEdgeSim/applications/delta/output/";
-    private static String settingsPath = "PureEdgeSim/applications/rmeac/settings/";
-    private static String outputPath = "PureEdgeSim/applications/rmeac/output/";
+//    private static String settingsPath = "PureEdgeSim/applications/rmeac/settings/";
+//    private static String outputPath = "PureEdgeSim/applications/rmeac/output/";
 //    private static String settingsPath = "PureEdgeSim/applications/fptosm/settings/";
 //    private static String outputPath = "PureEdgeSim/applications/fptosm/output/";
     public Main(){

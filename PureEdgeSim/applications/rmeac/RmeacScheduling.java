@@ -6,21 +6,24 @@ import com.mechalikh.pureedgesim.simulationmanager.SimulationManager;
 import com.mechalikh.pureedgesim.taskgenerator.Task;
 import common.Helper;
 import common.Job;
-import common.TaskReliability;
+import common.reliability.TaskReliability;
+import common.reliability.TransientFaultBasedReliability;
 import dag.TaskNode;
 
 public class RmeacScheduling {
     static double RELIABLE_THRESHOLD = 0.01;
     SimulationManager simManager;
+    TaskReliability reliability = null;
     public RmeacScheduling(SimulationManager simulationManager){
         this.simManager = simulationManager;
+        reliability = new TransientFaultBasedReliability();
     }
 
     public void Rmeac(Task task){
         TaskNode taskNode = (TaskNode) task;
         ComputingNode computingNode = null;
         Job job = taskNode.getJob();
-        double rel = TaskReliability.getReliability(taskNode);
+        double rel = reliability.getReliability(taskNode);
         if(rel < RELIABLE_THRESHOLD){
             taskNode.setLowReliable(true);
         }

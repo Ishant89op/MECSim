@@ -17,6 +17,8 @@ import com.mechalikh.pureedgesim.datacentersmanager.DataCenter;
 import com.mechalikh.pureedgesim.datacentersmanager.DataCentersManager;
 import com.mechalikh.pureedgesim.simulationmanager.SimulationManager;
 import com.mechalikh.pureedgesim.taskgenerator.Task;
+import common.criticality.CriticalityOnEnergyLateOutDeg;
+import common.criticality.TaskCriticality;
 import dag.TaskNode;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -79,7 +81,7 @@ public class DataProcessor {
             this.loadTasks();
             System.out.println("Loaded IoT dataset");
         } else{
-            System.out.println("It only supports scientific workflow and IoT dataset");
+            System.out.println("It only supports scientific workflow, synthetic and IoT dataset");
             System.exit(0);
         }
     }
@@ -87,7 +89,7 @@ public class DataProcessor {
 
 
     public List<Task> getTaskList() {
-        TaskCriticality taskCriticality = new TaskCriticality(simManager);
+        TaskCriticality taskCriticality = new CriticalityOnEnergyLateOutDeg(simManager);
         List<Task> taskList = new ArrayList<>();
         TaskProcessing deltaTaskProcessing = null;
         OffloadingOptimizer optimizer = new OffloadingOptimizer(simManager);

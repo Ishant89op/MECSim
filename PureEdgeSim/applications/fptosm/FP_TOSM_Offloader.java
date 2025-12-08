@@ -5,7 +5,8 @@ import com.mechalikh.pureedgesim.datacentersmanager.DataCenter;
 import com.mechalikh.pureedgesim.simulationmanager.SimLog;
 import com.mechalikh.pureedgesim.simulationmanager.SimulationManager;
 import common.Job;
-import common.TaskReliability;
+import common.reliability.TaskReliability;
+import common.reliability.TransientFaultBasedReliability;
 import dag.TaskNode;
 
 
@@ -18,10 +19,12 @@ public class FP_TOSM_Offloader {
     private List<ComputingNode> cloudNodes; // All available cloud nodes
     private double[] taskCriteriaWeights;
     SimulationManager simulationManager;
+    TaskReliability taskReliability;
 
     public FP_TOSM_Offloader(SimulationManager simulationManager){
         this.simulationManager = simulationManager;
         this.taskCriteriaWeights = AHPUtils.calculateWeights(FP_TOSM_Constants.TASK_AHP_CRITERIA_MATRIX_EXAMPLE);
+        this.taskReliability = new TransientFaultBasedReliability();
 //        fogNodes = new ArrayList<>();
 //        for(DataCenter dc : simulationManager.getDataCentersManager().getEdgeDatacenterList()){
 //            fogNodes.addAll(dc.nodeList);
@@ -47,7 +50,7 @@ public class FP_TOSM_Offloader {
 
         for(TaskNode t : incomingTasks){
             Job job = t.getJob();
-            double rel = TaskReliability.getReliability(t);
+            double rel = this.taskReliability.getReliability(t);
             if(rel < RELIABLE_THRESHOLD){
                 t.setLowReliable(true);
             }
