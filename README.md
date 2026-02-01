@@ -2,6 +2,27 @@
 
 MECSim: A Comprehensive Simulation Platform for Multi-Access Edge Computing
 
+# Please cite it as (Kindly do not use the github link):
+
+Akhirul Islam and Manojit Ghose (2026). MECSim: A Comprehensive Simulation Platform for Multi-Access Edge Computing
+
+Bibtex:
+```groovy
+@article{ISLAM2026103706,
+title = {MECSim: A comprehensive simulation platform for multi-access edge computing},
+journal = {Journal of Systems Architecture},
+volume = {173},
+pages = {103706},
+year = {2026},
+issn = {1383-7621},
+doi = {https://doi.org/10.1016/j.sysarc.2026.103706},
+url = {https://www.sciencedirect.com/science/article/pii/S138376212600024X},
+author = {Akhirul Islam and Manojit Ghose},
+keywords = {Simulation, Multi-access edge computing, Modeling, DVFS-enabled devices, Edge simulator, MEC simulator, Task offloading},
+abstract = {The rapid growth of CPU-intensive and latency-sensitive applications has intensified the need for efficient resource management within edge computing environments. While existing simulators such as iFogSim, EdgeCloudSim, and PureEdgeSim have contributed significantly to edge computing research, they lack comprehensive support for modeling modern hardware heterogeneity, energy-aware mechanisms, service providers’ economic models, dependent task modeling, and reliability-driven task management. This paper presents MECSim (multi-access edge computing simulator), an enhanced simulation framework that extends PureEdgeSim to enable realistic modeling of heterogeneous, cooperative, and fault-tolerant edge computing ecosystems. MECSim supports multi-data-center clusters along with dynamic voltage and frequency scaling (DVFS) capable user devices for energy-efficient operation. The framework further integrates dependent-task modeling, cost and profit evaluation for service providers, and reliability mechanisms via transient-failure simulation, caching, and task replication. We have implemented five state-of-the-art approaches, demonstrating the effectiveness of our simulation platform and building confidence in its practical utility to handle diverse system architectures. With its extensible architecture and comprehensive modeling capabilities, MECSim provides a promising platform for future research on energy-efficient, profit-driven, and fault-tolerant task offloading and scheduling in heterogeneous MEC environments. The results also demonstrate that MECSim achieves a 44.13% (on average) reduction in simulation time compared to EdgeCloudSim. In addition, we have conducted experiments using dispersion-aware metrics to quantify variability and stability across 50 independent runs, thereby enabling a more robust and reliable performance evaluation.}
+}
+```
+
 ## 📖 Overview
 MECSim (multi-access edge computing simulator), an enhanced simulation framework that extends PureEdgeSim
 to enable realistic modeling of heterogeneous, cooperative, and fault-tolerant edge computing ecosystems.
