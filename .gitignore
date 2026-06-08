@@ -1,0 +1,21 @@
+# Reference papers
+ref/
+
+# IDE files
+.idea/
+*.iml
+
+# Build output
+target/
+*.class
+
+# OS files
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+jacoco.xml
