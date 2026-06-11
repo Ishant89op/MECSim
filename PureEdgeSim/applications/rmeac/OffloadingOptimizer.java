@@ -5,23 +5,44 @@ import com.mechalikh.pureedgesim.datacentersmanager.DataCenter;
 import com.mechalikh.pureedgesim.simulationmanager.SimulationManager;
 import common.Helper;
 import dag.TaskNode;
+import org.moeaframework.Executor;
+import org.moeaframework.core.NondominatedPopulation;
+import org.moeaframework.core.Problem;
+import org.moeaframework.core.Solution;
+import org.moeaframework.core.variable.EncodingUtils;
+import org.moeaframework.problem.AbstractProblem;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 public class OffloadingOptimizer {
     // Constants
     private static final int POPULATION_SIZE = 100;
     private static final int MAX_GENERATIONS = 100;
-    private static final double MUTATION_RATE = 0.05; // 5% chance of mutation per variable
 
-    // Data Structures (you'll need to define these based on your specific model)
     private SimulationManager simulationManager;
+
+    class FlatEdgeServer {
+        int dcIndex;
+        int serverIndex;
+        ComputingNode node;
+        public FlatEdgeServer(int d, int s, ComputingNode n) { dcIndex = d; serverIndex = s; node = n; }
+    }
+    private List<FlatEdgeServer> flatEdgeServers;
 
     public OffloadingOptimizer(SimulationManager simManager){
         this.simulationManager = simManager;
+        this.flatEdgeServers = new ArrayList<>();
+        int dcIndex = 0;
+        for (DataCenter dc : simManager.getDataCentersManager().getEdgeDatacenterList()) {
+            int serverIndex = 0;
+            for (ComputingNode node : dc.nodeList) {
+                flatEdgeServers.add(new FlatEdgeServer(dcIndex, serverIndex, node));
+                serverIndex++;
+            }
+            dcIndex++;
+        }
     }
 
     public void getDecision(Map<Integer, TaskNode> job){
@@ -31,75 +52,75 @@ public class OffloadingOptimizer {
         }
         optimizeOffloading(tasklist);
     }
-    // The main optimization method
+
     List<OffloadingDecision> optimizeOffloading(List<TaskNode> tasklist) {
-        List<Individual> population = initializePopulation(tasklist, POPULATION_SIZE);
-
-        for (int generation = 0; generation < MAX_GENERATIONS; generation++) {
-            evaluateFitness(population);
-
-            List<Individual> selectedIndividuals = selectIndividuals(population);
-
-            mutatePopulation(selectedIndividuals);
-
-            population = selectedIndividuals;
-        }
-
-        return decodeBestSolution(getBestIndividual(population));
-    }
-
-    // Helper functions
-
-    // Initialize the population (randomly assign edge servers to tasks)
-    private List<Individual> initializePopulation(List<TaskNode> tasklist, int populationSize) {
-        List<Individual> population = new ArrayList<>();
-        Random random = new Random();
-
-        for (int i = 0; i < populationSize; i++) {
-            Individual individual = new Individual();
-            for(TaskNode taskNode : tasklist){
-                int rand_off = Helper.getRandomInteger(0, 10);
-                if(rand_off == 0) {
-                    individual.addOffloadingDecision(new OffloadingDecision(taskNode,0, 0, 1));
-                } else{
-                    rand_off = Helper.getRandomInteger(0, simulationManager.getDataCentersManager().getEdgeDatacenterList().size());
-                    if(rand_off == simulationManager.getDataCentersManager().getEdgeDatacenterList().size()){
-                        individual.addOffloadingDecision(new OffloadingDecision(taskNode,0, 0, 2));
-                    } else{
-                        int server_index = Helper.getRandomInteger(0, simulationManager.getDataCentersManager().getEdgeDatacenterList().get(rand_off).nodeList.size()-1);
-                        individual.addOffloadingDecision(new OffloadingDecision(taskNode, rand_off, server_index, 0));
-                    }
+        Problem problem = new AbstractProblem(tasklist.size(), 3) {
+            @Override
+            public void evaluate(Solution solution) {
+                List<OffloadingDecision> decisions = decodeSolution(solution, tasklist);
+                double totalExecutionTime = 0;
+                double totalEnergyConsumption = 0;
+                
+                for(OffloadingDecision decision : decisions){
+                    totalExecutionTime += calculateExecutionTime(decision);
+                    totalEnergyConsumption += calculateEnergyConsumption(decision);
                 }
+                double loadBalance = calculateLoadBalance(decisions);
+
+                solution.setObjective(0, totalExecutionTime);
+                solution.setObjective(1, totalEnergyConsumption);
+                solution.setObjective(2, loadBalance);
             }
-            population.add(individual);
+
+            @Override
+            public Solution newSolution() {
+                Solution solution = new Solution(getNumberOfVariables(), getNumberOfObjectives());
+                for (int i = 0; i < getNumberOfVariables(); i++) {
+                    solution.setVariable(i, EncodingUtils.newInt(0, 1 + flatEdgeServers.size()));
+                }
+                return solution;
+            }
+        };
+
+        NondominatedPopulation result = new Executor()
+                .withProblem(problem)
+                .withAlgorithm("NSGAIII")
+                .withMaxEvaluations(POPULATION_SIZE * MAX_GENERATIONS)
+                .run();
+
+        // Pick the solution from the Pareto front that minimizes a balanced scalarization
+        Solution best = null;
+        double minScore = Double.MAX_VALUE;
+        for (Solution solution : result) {
+            double score = 0.5 * solution.getObjective(0) + 0.3 * solution.getObjective(1) + 0.1 * solution.getObjective(2);
+            if (score < minScore) {
+                minScore = score;
+                best = solution;
+            }
         }
-        return population;
+        
+        if (best == null) {
+            // Fallback if something goes wrong
+            best = problem.newSolution();
+        }
+
+        return decodeSolution(best, tasklist);
     }
 
-    // Evaluate the fitness of each individual in the population
-    private void evaluateFitness(List<Individual> population) {
-        for (Individual individual : population) {
-            // Calculate the fitness score (e.g., using your fitness function)
-            individual.setFitness(calculateFitness(individual.getOffloadingDecisions()));
+    private List<OffloadingDecision> decodeSolution(Solution solution, List<TaskNode> tasklist) {
+        List<OffloadingDecision> decisions = new ArrayList<>();
+        for (int i = 0; i < solution.getNumberOfVariables(); i++) {
+            int v = EncodingUtils.getInt(solution.getVariable(i));
+            if (v == 0) {
+                decisions.add(new OffloadingDecision(tasklist.get(i), 0, 0, 1)); // UE
+            } else if (v == 1) {
+                decisions.add(new OffloadingDecision(tasklist.get(i), 0, 0, 2)); // Cloud
+            } else {
+                FlatEdgeServer fs = flatEdgeServers.get(v - 2);
+                decisions.add(new OffloadingDecision(tasklist.get(i), fs.dcIndex, fs.serverIndex, 0)); // Edge
+            }
         }
-    }
-
-    private double calculateFitness(List<OffloadingDecision> decisions) {
-        double totalExecutionTime = 0;
-        double totalEnergyConsumption = 0;
-        double loadBalance = 0;
-
-        for(OffloadingDecision decision : decisions){
-            totalExecutionTime += calculateExecutionTime(decision);
-            totalEnergyConsumption += calculateEnergyConsumption(decision);
-            loadBalance += calculateLoadBalance(decision);
-        }
-
-        // 5. Combine these values (e.g., using weighted sum or other method) to get a fitness score
-        double fitness = 0.5 * totalExecutionTime + 0.3 * totalEnergyConsumption + 0.1 * loadBalance;// - 0.1 * reliability;
-        // You can adjust the weights based on your priorities
-
-        return fitness;
+        return decisions;
     }
 
     private double calculateExecutionTime(OffloadingDecision offloadingDecision){
@@ -119,34 +140,34 @@ public class OffloadingOptimizer {
         return cpu_time + transmission_time;
     }
 
-    private double calculateLoadBalance(OffloadingDecision decision) {
-        double totalUtilization = 0;
-        double loadBalance = 0;
-        int totalServer = 0;
-        if (decision.getDecision() == 0) {
-            for (DataCenter dc : simulationManager.getDataCentersManager().getEdgeDatacenterList()) {
-                for (ComputingNode computingNode : dc.nodeList) {
-                    totalUtilization += computingNode.getAvgCpuUtilization();
-                    totalServer++;
-                }
-            }
-
-            double averageUtilization = totalUtilization / totalServer;
-
-            double sumSquaredDifferences = 0;
-            if (decision.getDecision() == 0) {
-                for (DataCenter dc : simulationManager.getDataCentersManager().getEdgeDatacenterList()) {
-                    for (ComputingNode computingNode : dc.nodeList) {
-                        double difference = computingNode.getAvgCpuUtilization() - averageUtilization;
-                        sumSquaredDifferences += difference * difference;
+    private double calculateLoadBalance(List<OffloadingDecision> decisions) {
+        double[] util = new double[flatEdgeServers.size()];
+        int edgeTaskCount = 0;
+        for (OffloadingDecision decision : decisions) {
+            if (decision.getDecision() == 0) { // Edge
+                // Find which flat edge server this corresponds to
+                int idx = 0;
+                for (int i = 0; i < flatEdgeServers.size(); i++) {
+                    if (flatEdgeServers.get(i).dcIndex == decision.getDcIndex() && flatEdgeServers.get(i).serverIndex == decision.getServerIndex()) {
+                        idx = i;
+                        break;
                     }
                 }
+                util[idx] += 1.0; // Increment load
+                edgeTaskCount++;
             }
-
-
-            loadBalance = Math.sqrt(sumSquaredDifferences / totalServer);
         }
-        return loadBalance;
+        
+        if (edgeTaskCount == 0 || flatEdgeServers.size() == 0) return 0;
+        
+        double averageUtilization = (double) edgeTaskCount / flatEdgeServers.size();
+        double sumSquaredDifferences = 0;
+        for (int i = 0; i < flatEdgeServers.size(); i++) {
+            double difference = util[i] - averageUtilization;
+            sumSquaredDifferences += difference * difference;
+        }
+
+        return Math.sqrt(sumSquaredDifferences / flatEdgeServers.size());
     }
 
     private double calculateEnergyConsumption(OffloadingDecision offloadingDecision){
@@ -162,78 +183,4 @@ public class OffloadingOptimizer {
 
         return energy;
     }
-
-    // Select individuals for the next generation using tournament selection
-    private List<Individual> selectIndividuals(List<Individual> population) {
-        List<Individual> selectedIndividuals = new ArrayList<>();
-        Random random = new Random();
-        int tournamentSize = 5; // You can adjust this parameter
-
-        for (int i = 0; i < POPULATION_SIZE; i++) {
-            // 1. Randomly select tournamentSize individuals
-            List<Individual> tournamentParticipants = new ArrayList<>();
-            for (int j = 0; j < tournamentSize; j++) {
-                int randomIndex = random.nextInt(population.size());
-                tournamentParticipants.add(population.get(randomIndex));
-            }
-
-            // 2. Find the individual with the highest fitness
-            Individual bestIndividual = tournamentParticipants.get(0);
-            for (Individual individual : tournamentParticipants) {
-                if (individual.getFitness() < bestIndividual.getFitness()) {
-                    bestIndividual = individual;
-                }
-            }
-
-            // 3. Add the best individual to the selectedIndividuals list
-            selectedIndividuals.add(bestIndividual);
-        }
-
-        return selectedIndividuals;
-    }
-
-    // Apply mutation to the selected individuals
-    private void mutatePopulation(List<Individual> population) {
-        Random random = new Random();
-
-        for (Individual individual : population) {
-            // Apply a random mutation to each variable in the individual's representation
-            for (int i = 0; i < individual.getOffloadingDecisions().size(); i++) {
-                if (random.nextDouble() < MUTATION_RATE) {
-                    OffloadingDecision offloadingDecision = individual.getOffloadingDecisions().get(i);
-                    // Change the edge server assignment for the task
-                    int rand_off = Helper.getRandomInteger(0, 2);
-                    if(rand_off == 0) {
-                        individual.setOffloadingDecision(i, new OffloadingDecision(offloadingDecision.getTaskNode(), 0, 0, 1));
-                    } else{
-                        rand_off = Helper.getRandomInteger(0, simulationManager.getDataCentersManager().getEdgeDatacenterList().size());
-                        if(rand_off == simulationManager.getDataCentersManager().getEdgeDatacenterList().size()){
-                            individual.setOffloadingDecision(i, new OffloadingDecision(offloadingDecision.getTaskNode(),0, 0, 2));
-                        } else{
-                            int server_index = Helper.getRandomInteger(0, simulationManager.getDataCentersManager().getEdgeDatacenterList().get(rand_off).nodeList.size()-1);
-                            individual.setOffloadingDecision(i, new OffloadingDecision(offloadingDecision.getTaskNode(), rand_off, server_index, 0));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Get the best individual in the population
-    private Individual getBestIndividual(List<Individual> population) {
-        Individual bestIndividual = population.get(0);
-        for (Individual individual : population) {
-            if (individual.getFitness() < bestIndividual.getFitness()) {
-                bestIndividual = individual;
-            }
-        }
-        return bestIndividual;
-    }
-
-    // Decode the best solution (convert it back to a list of OffloadingDecisions)
-    private List<OffloadingDecision> decodeBestSolution(Individual bestIndividual) {
-        // ... Implement the decoding logic here (convert the individual's representation back into OffloadingDecision objects)
-        return bestIndividual.getOffloadingDecisions();
-    }
 }
-
