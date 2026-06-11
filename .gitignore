@@ -3,6 +3,7 @@ ref/
 
 # IDE files
 .idea/
+.vscode/
 *.iml
 
 # Build output
@@ -19,3 +20,27 @@ Thumbs.db
 
 # Coverage
 jacoco.xml
+
+# Simulation outputs
+PureEdgeSim/applications/*/output/
+PureEdgeSim/applications/*/output_*/
+
+# Results reports
+results/
+
+# Automation scripts and temps
+parse_results.py
+parse_scientific.py
+parse_synthetic.py
+run_datasets.py
+run_all.py
+cp.txt
+table_style.css
+
+# Apache Maven
+apache-maven-3.8.8/
+apache-maven-3.8.8-bin.tar.gz
+
+# Uncompressed datasets (too large for git)
+PureEdgeSim/dataset/iot_dataset/JobDetails.json
+PureEdgeSim/dataset/iot_dataset/TaskDetails.txt
