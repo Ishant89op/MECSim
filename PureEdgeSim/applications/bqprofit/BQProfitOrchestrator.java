@@ -42,9 +42,31 @@ public class BQProfitOrchestrator extends Orchestrator {
         //System.out.println("Allocating computing resources: "+taskNode.getApplicationID()+" : "+taskNode.getId());
         if(taskNode.getTaskDecision() == TaskNode.TaskDecision.UE_ONLY){
             return taskNode.getEdgeDevice();
-        } else{
-            return taskNode.getSelectedComputingNode();
         }
+        
+        ComputingNode selected = taskNode.getSelectedComputingNode();
+        
+        // Enforce WAN capacity constraint for Cloud offloading
+        if(selected != null && selected.getType() == CLOUD) {
+            double wanUtilization = simManager.getNetworkModel().getWanUpUtilization();
+            if(wanUtilization > 0.85) { // 85% threshold
+                // Fallback: find best available Edge server instead
+                ComputingNode bestEdge = null;
+                double bestCores = -1;
+                for(com.mechalikh.pureedgesim.datacentersmanager.DataCenter edgeDc : simManager.getDataCentersManager().getEdgeDatacenterList()) {
+                    for(ComputingNode node : edgeDc.nodeList) {
+                        if(node.getAvailableCores() > bestCores) {
+                            bestCores = node.getAvailableCores();
+                            bestEdge = node;
+                        }
+                    }
+                }
+                if(bestEdge != null && bestCores > 0) {
+                    return bestEdge;
+                }
+            }
+        }
+        return selected;
     }
 
 
