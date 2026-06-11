@@ -96,6 +96,9 @@ public class SimLog {
 	int numTaskFailedOnUEFailure = 0;
 	public static double CACHING_TIME = 5;
 
+	// Deduplication registry to prevent counting replica tasks
+	private Set<String> countedTaskIds = new HashSet<>();
+
 	//Test stats
 	public static double min_nearLatencyReatio = Double.MAX_VALUE;
 	public static double min_neighbourLatencyRatio = Double.MAX_VALUE;
@@ -861,6 +864,13 @@ public class SimLog {
 	}
 
 	public void taskSentFromOrchToDest(Task task) {
+		// Deduplication: skip if this task (by appID + taskID) was already counted
+		String taskKey = task.getApplicationID() + "_" + task.getId();
+		if (countedTaskIds.contains(taskKey)) {
+			return;
+		}
+		countedTaskIds.add(taskKey);
+
 		SimulationParameters.TYPES type = task.getOffloadingDestination().getType();
 		String dc_name = task.getOffloadingDestination().getName();
 		if (type == SimulationParameters.TYPES.CLOUD) {
