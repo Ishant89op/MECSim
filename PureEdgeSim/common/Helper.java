@@ -257,9 +257,14 @@ public class Helper {
     }
 
     public static double dynamicEnergyConsumption(double taskLength, double mipsCapacity, double mipsRequirement) {
-        double latency = taskLength / mipsCapacity;
-        double cpuEnergyConsumption = (0.01 * (mipsRequirement * mipsRequirement) / (mipsCapacity * mipsCapacity) * latency) / 3600; //alpha = 0.01
-        return cpuEnergyConsumption;
+        // Correct DVFS model: E = alpha * C_eff * V^2 * L
+        // With V proportional to f: E = alpha * C_eff * f^2 * L
+        double alpha = 0.01;  // switching activity
+        double C_eff = 1.0;   // effective capacitance (normalized)
+        // mipsRequirement acts as operatingFrequency, mipsCapacity as maxFrequency
+        double scaledFreqRatio = mipsRequirement / mipsCapacity;
+        double energy = alpha * C_eff * scaledFreqRatio * scaledFreqRatio * taskLength / 3600.0;
+        return energy;
     }
 
     public static double calculateLocalLatency(Task task) {
